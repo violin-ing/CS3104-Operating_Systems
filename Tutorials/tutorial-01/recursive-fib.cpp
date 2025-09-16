@@ -1,5 +1,5 @@
-#include <iostream>
-#include <string>
+#include <iostream> // used for std::cout and std::endl
+#include <string> // used for std::stoi()
 
 int fib(int n) {
     if (n <= 1) {
