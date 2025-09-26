@@ -8,6 +8,9 @@
 #pragma once
 
 #include <stacsos/kernel/sched/alg/scheduling-algorithm.h>
+#include <list>
+#include <unordered_map>
+
 
 namespace stacsos::kernel::sched::alg {
 
@@ -15,10 +18,13 @@ namespace stacsos::kernel::sched::alg {
 // Please edit this file in any way you see fit.
 
 class round_robin : public scheduling_algorithm {
+private:
+    std::list<tcb*> runqueue;
+    std::unordered_map<tcb*, size_t> schedule_count;
 public:
-        virtual void add_to_runqueue(tcb &tcb) override;
-        virtual void remove_from_runqueue(tcb &tcb) override;
-        virtual tcb *select_next_task(tcb *current) override;
-        virtual const char *name() const { return "round robin"; }
+    virtual void add_to_runqueue(tcb &tcb) override;
+    virtual void remove_from_runqueue(tcb &tcb) override;
+    virtual tcb *select_next_task(tcb *current) override;
+    virtual const char *name() const { return "round robin"; }
 };
 } // namespace stacsos::kernel::sched::alg
