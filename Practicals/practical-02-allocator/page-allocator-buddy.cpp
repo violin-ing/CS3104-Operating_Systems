@@ -70,7 +70,10 @@ void page_allocator_buddy::dump() const
  * @param range_start The first page in the range.
  * @param page_count The number of pages in the range.
  */
-void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
+// void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
+void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) {
+
+}
 
 /**
  * @brief Inserts a block of pages into the free list for the given order.
@@ -149,7 +152,10 @@ void page_allocator_buddy::remove_free_block(int order, page &block_start)
  * @param order The order in which the free block current exists.
  * @param block_start The starting page of the block to be split.
  */
-void page_allocator_buddy::split_block(int order, page &block_start) { panic("TODO"); }
+// void page_allocator_buddy::split_block(int order, page &block_start) { panic("TODO"); }
+void page_allocator_buddy::split_block(int order, page &block_start) {
+
+}
 
 /**
  * @brief Merges two buddy-adjacent free blocks in one order, into a block in the next higher order.
@@ -158,7 +164,10 @@ void page_allocator_buddy::split_block(int order, page &block_start) { panic("TO
  * @param order The order in which to merge buddies.
  * @param buddy Either buddy page in the free block.
  */
-void page_allocator_buddy::merge_buddies(int order, page &buddy) { panic("TODO"); }
+// void page_allocator_buddy::merge_buddies(int order, page &buddy) { panic("TODO"); }
+void page_allocator_buddy::merge_buddies(int order, page &buddy) {
+
+}
 
 /**
  * @brief Allocates pages, using the buddy algorithm.
@@ -168,7 +177,10 @@ void page_allocator_buddy::merge_buddies(int order, page &buddy) { panic("TODO")
  * @param flags Any allocation flags to take into account.
  * @return page* The starting page of the block that was allocated, or nullptr if the allocation cannot be satisfied.
  */
-page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) { panic("TODO"); }
+// page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) { panic("TODO"); }
+page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) {
+	
+}
 
 /**
  * @brief Frees previously allocated pages, using the buddy algorithm.
@@ -177,4 +189,7 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
  * @param block_start The starting page of the block to be freed.
  * @param order The order of the block being freed.
  */
-void page_allocator_buddy::free_pages(page &block_start, int order) { panic("TODO"); }
+// void page_allocator_buddy::free_pages(page &block_start, int order) { panic("TODO"); }
+void page_allocator_buddy::free_pages(page &block_start, int order) {
+
+}
