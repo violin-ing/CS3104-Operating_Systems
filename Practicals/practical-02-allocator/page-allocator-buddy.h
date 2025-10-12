@@ -28,7 +28,7 @@ public:
 	virtual void dump() const override;
 
 private:
-	static const int LastOrder = 16;
+	static const int LastOrder = 16; // Maximum order 2^16 pages
 
 	page *free_list_[LastOrder + 1];
 	u64 total_free_;
