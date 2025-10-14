@@ -73,6 +73,7 @@ void page_allocator_buddy::dump() const
 // void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
 void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) {
 	u64 remaining_pages = page_count;
+	
 }
 
 /**
