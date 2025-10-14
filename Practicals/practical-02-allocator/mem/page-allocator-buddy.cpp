@@ -16,12 +16,17 @@ using namespace stacsos::kernel::mem;
 
 /**
  * Notes:
- * The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
+ * - The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
+ * - Use "block_aligned(order, block_start.pfn())" to check for block alignment
  */
 
 // Represents the contents of a free page, that can hold useful metadata.
 struct page_metadata {
 	page *next_free;
+
+	// EXTRA METADATA:
+	u64 order; // Which order this block belongs to
+	bool is_free; // Free bit
 };
 
 /**
@@ -77,8 +82,38 @@ void page_allocator_buddy::dump() const
  */
 // void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
 void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) {
+	u64 base_pfn = range_start.pfn();
 	u64 remaining_pages = page_count;
 
+	// Find the order required (i.e. 2^order <= remaining_pages)
+	// Also check that base_pfn is aligned to that order
+	while (remaining_pages > 0) {
+		int order = 0;
+
+		// Step 1. Find the max order that the block can fit in
+		bool order_found = false;
+		while (order <= LastOrder && !order_found) {
+			int pages_in_block = 1ULL << order;
+			if (pages_in_block > remaining_pages) {
+				order_found = true;
+				order--;
+			} else {
+				order++;
+			}
+		}
+		if (order > LastOrder) {
+			order = LastOrder;
+		}
+
+		// Step 2. Check that the base_pfn of the block is aligned with the order
+		while (!block_aligned(order, base_pfn)) {
+			order--;
+		}
+
+		// Step 3. Insert the block and decrememt the remaining pages
+		insert_free_block(order, page::get_from_pfn(base_pfn));
+		remaining_pages -= (1ULL << order);
+	}
 }
 
 /**

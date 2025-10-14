@@ -23,22 +23,26 @@ using namespace stacsos::kernel::mem;
  * - get_from_pfn(pfn) -> returns a reference to the page object for that PFN
  */
 
-
-struct page_metadata { // Each free page block as some metadata stored at the beginning
+ // Every free region of memory is a linked list pointing to the next free block.
+ // This represents a contiguous set of free pages.
+struct page_metadata {
 	page *next_free;
 	u64 free_block_size;
 };
 
+// Metadata is stored at the start of the free block's memory itself
 static inline page_metadata *metadata(page *page) { return (page_metadata *)page->base_address_ptr(); }
 
 void page_allocator_linear::insert_free_pages(page &range_start, u64 page_count)
 {
-	page **slot = &free_list_;
+	page **slot = &free_list_; // Address of the start of the contiguous free pages
 
+	// Traverse to the end of the contiguous free pages and insert the free page at the end
 	while (*slot) {
 		slot = &(metadata(*slot)->next_free);
 	}
 
+	// Initialize the metadata for the free page
 	*slot = &range_start;
 	metadata(&range_start)->next_free = nullptr;
 	metadata(&range_start)->free_block_size = page_count;
@@ -46,25 +50,27 @@ void page_allocator_linear::insert_free_pages(page &range_start, u64 page_count)
 
 page *page_allocator_linear::allocate_pages(int order, page_allocation_flags flags)
 {
-	u64 page_count = 1 << order;
+	u64 page_count = 1 << order; // Equivalent to doing pow(2, order)
 
 	// find a free block with enough pages
 	// take from the end, so we can just reduce the free block size
 
-	page *free_block = free_list_;
+	page *free_block = free_list_; // Head of linked list with free memory blocks
 
 	while (free_block) {
 		// TODO: Little hack here -- we subtract one so that we don't have to remove the free
 		// block from the list when it's fully used up, since metadata is stored at the start
 		// of the free block.
-		if ((metadata(free_block)->free_block_size - 1) >= page_count) {
+		if ((metadata(free_block)->free_block_size - 1) >= page_count) { // Only allocate if we have enough free pages
 			metadata(free_block)->free_block_size -= page_count;
 
+			// Allocate pages from the end of the linked list
 			u64 start_pfn = free_block->pfn() + metadata(free_block)->free_block_size;
 			if ((flags & page_allocation_flags::zero) == page_allocation_flags::zero) {
 				memops::pzero(page::get_from_pfn(start_pfn).base_address_ptr(), page_count);
 			}
 
+			// Return the requested pages
 			return &page::get_from_pfn(start_pfn);
 		}
 
