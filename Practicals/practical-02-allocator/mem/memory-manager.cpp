@@ -18,6 +18,11 @@ extern "C" const char *_IMAGE_END;
 using namespace stacsos::kernel;
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes:
+ * The memory management core routines.
+ */
+
 struct memory_block {
 	u64 start, length;
 	bool avail;

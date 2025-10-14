@@ -12,6 +12,11 @@
 using namespace stacsos::kernel;
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes:
+ * The implementation of the new and delete operators for C++.
+ */
+
 extern "C" {
 void *__dso_handle = &__dso_handle;
 int __cxa_atexit(void (*destructor)(void *), void *arg, void *dso) { return 0; }

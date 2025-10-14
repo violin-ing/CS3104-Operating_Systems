@@ -13,6 +13,11 @@
 
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes: 
+ * Contains code for managing a logical address space.
+ */
+
 address_space *address_space::create_linked(u64 alloc_rgn_start)
 {
 	auto linked_pt = pt_->create_linked_copy(pta_);

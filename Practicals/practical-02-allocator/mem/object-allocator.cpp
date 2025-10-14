@@ -13,6 +13,11 @@
 
 using namespace stacsos::kernel::mem;
 
+/**
+ * Allocates individual objects for use by the kernel. 
+ * This uses slab caches for small objects, and the large object allocator for large objects.
+ */
+
 #define VMALLOC_AREA 0xfffff00000000000
 
 object_allocator::object_allocator()

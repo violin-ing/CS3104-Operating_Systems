@@ -11,7 +11,20 @@
 
 using namespace stacsos::kernel::mem;
 
-struct page_metadata {
+/**
+ * Notes: 
+ * A naive implementation of a page allocator, so that the OS can boot without a working buddy allocator.
+ */
+
+/**
+ * Functions used:
+ * - pfn() -> returns the page frame number (the physical page index)
+ * - base_address_prt() -> returns a pointer to the start of the physical page
+ * - get_from_pfn(pfn) -> returns a reference to the page object for that PFN
+ */
+
+
+struct page_metadata { // Each free page block as some metadata stored at the beginning
 	page *next_free;
 	u64 free_block_size;
 };

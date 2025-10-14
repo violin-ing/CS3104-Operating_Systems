@@ -10,6 +10,11 @@
 
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes:
+ * The core page allocation routines.
+ */
+
 void page_allocator::perform_selftest()
 {
 	dprintf("******************************************\n");

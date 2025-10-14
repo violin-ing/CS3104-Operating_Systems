@@ -3,6 +3,11 @@
 
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes:
+ * An allocator specifically for allocating pages used by page tables.
+ */
+
 page *page_table_allocator::allocate()
 {
 	page *p = memory_manager::get().pgalloc().allocate_pages(0, page_allocation_flags::zero);

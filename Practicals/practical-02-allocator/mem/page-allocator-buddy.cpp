@@ -14,6 +14,11 @@ using namespace stacsos;
 using namespace stacsos::kernel;
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes:
+ * The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
+ */
+
 // Represents the contents of a free page, that can hold useful metadata.
 struct page_metadata {
 	page *next_free;
@@ -73,7 +78,7 @@ void page_allocator_buddy::dump() const
 // void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
 void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) {
 	u64 remaining_pages = page_count;
-	
+
 }
 
 /**

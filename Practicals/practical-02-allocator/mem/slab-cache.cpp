@@ -12,6 +12,11 @@
 
 using namespace stacsos::kernel::mem;
 
+/**
+ * Notes: 
+ * An implementation of a slab-based object allocator.
+ */
+
 template <size_t object_size, int slab_page_order> void *slab_cache<object_size, slab_page_order>::allocate_slab()
 {
 	page *slab_page = (memory_manager::get().pgalloc().allocate_pages(slab_page_order));

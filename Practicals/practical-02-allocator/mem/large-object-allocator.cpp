@@ -16,6 +16,12 @@
 using namespace stacsos::kernel::mem;
 
 /**
+ * Notes: 
+ *  Allocates objects that are larger than the pre-defined slab cache sizes.
+ */
+
+
+/**
  * @brief Allocates a block of memory of the given size.
  *
  * @param size The size of memory to allocate
