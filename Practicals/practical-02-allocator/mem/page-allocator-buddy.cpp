@@ -112,7 +112,9 @@ void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) 
 
 		// Step 3. Insert the block and decrememt the remaining pages
 		insert_free_block(order, page::get_from_pfn(base_pfn));
-		remaining_pages -= (1ULL << order);
+		inserted_block_size = 1ULL << order;
+		base_pfn += inserted_block_size;
+		remaining_pages -= inserted_block_size;
 	}
 }
 
@@ -195,7 +197,24 @@ void page_allocator_buddy::remove_free_block(int order, page &block_start)
  */
 // void page_allocator_buddy::split_block(int order, page &block_start) { panic("TODO"); }
 void page_allocator_buddy::split_block(int order, page &block_start) {
+	// Verify that the order is valid
+	assert(order > 0 && order <= LastOrder); // Cannot split a block of order 0
+	
+	// Verify that block_start is aligned
+	assert(block_aligned(order, block_start.pfn()));
 
+	// Remove the block to be split for the time being
+	remove_free_block(order, block_start);
+
+	// Get the base PFN of the left and right halves
+	page* left_block = &block_start;
+
+	u64 right_block_start = 1ULL << (order - 1);
+	page* right_block = page::get_from_pfn(block_start.pfn() + right_block_start);
+
+	// Insert each half
+	insert_free_block(order - 1, *left_block);
+	insert_free_block(order - 1, *right_block);
 }
 
 /**
