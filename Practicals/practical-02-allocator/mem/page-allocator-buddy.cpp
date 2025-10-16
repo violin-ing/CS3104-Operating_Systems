@@ -236,7 +236,22 @@ void page_allocator_buddy::merge_buddies(int order, page &buddy) {
 
 	// Buddy of a block = start of block XOR order
 	u64 buddy_pfn = buddy.pfn() ^ (1ULL << order);
-	page* buddy_block = &page::get_from_pfn(buddy_pfn);
+	page* partner = &page::get_from_pfn(buddy_pfn);
+
+	// Remove the block and its buddy
+	remove_free_block(order, buddy);
+	remove_free_block(order, *partner);
+
+	// Obtain the new starting PFN
+	u64 partner_pfn = partner->pfn();
+	page* merged;
+	if (partner_pfn > buddy_pfn) {
+		merged = buddy;
+	} else {
+		merged = partner;
+	}
+
+	insert_free_block(order + 1, merged);
 }
 
 /**
@@ -249,6 +264,9 @@ void page_allocator_buddy::merge_buddies(int order, page &buddy) {
  */
 // page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) { panic("TODO"); }
 page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) {
+	assert(order >= 0 && order <= LastOrder);
+
+	int current_order = order;
 	
 }
 
