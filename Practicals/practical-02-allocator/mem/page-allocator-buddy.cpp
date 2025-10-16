@@ -16,8 +16,10 @@ using namespace stacsos::kernel::mem;
 
 /**
  * Notes:
- * - The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
+ * The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
+ * 
  * - Use "block_aligned(order, block_start.pfn())" to check for block alignment
+ * - Use "page* block = &page::get_from_pfn(block_start.pfn());" to get the page using PFN
  */
 
 // Represents the contents of a free page, that can hold useful metadata.
@@ -210,7 +212,7 @@ void page_allocator_buddy::split_block(int order, page &block_start) {
 	page* left_block = &block_start;
 
 	u64 right_block_start = 1ULL << (order - 1);
-	page* right_block = page::get_from_pfn(block_start.pfn() + right_block_start);
+	page* right_block = &page::get_from_pfn(block_start.pfn() + right_block_start);
 
 	// Insert each half
 	insert_free_block(order - 1, *left_block);
@@ -226,7 +228,15 @@ void page_allocator_buddy::split_block(int order, page &block_start) {
  */
 // void page_allocator_buddy::merge_buddies(int order, page &buddy) { panic("TODO"); }
 void page_allocator_buddy::merge_buddies(int order, page &buddy) {
+	// Verify that the order is valid
+	assert(order >= 0 && order <= LastOrder);
+	
+	// Verify that start of buddy is aligned
+	assert(block_aligned(order, buddy.pfn()));
 
+	// Buddy of a block = start of block XOR order
+	u64 buddy_pfn = buddy.pfn() ^ (1ULL << order);
+	page* buddy_block = &page::get_from_pfn(buddy_pfn);
 }
 
 /**
