@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator",
-      "program": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator/build/Debug/outDebug",
+      "cwd": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator/mem",
+      "program": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator/mem/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

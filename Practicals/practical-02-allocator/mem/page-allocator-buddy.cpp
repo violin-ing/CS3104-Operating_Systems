@@ -18,12 +18,14 @@ using namespace stacsos::kernel::mem;
  * Notes:
  * The skeleton code for the Buddy Allocator algorithm. You will be filling this in.
  * 
- * - Use "block_aligned(order, block_start.pfn())" to check for block alignment
- * - Use "page* block = &page::get_from_pfn(block_start.pfn());" to get the page using PFN
+ * - block_aligned(order, block_start.pfn()) -> check for block alignment
+ * - page* block = &page::get_from_pfn(block_start.pfn()); -> get the page using PFN
+ * - page *block = free_list_[order]; -> get first free page from order
  */
 
 // Represents the contents of a free page, that can hold useful metadata.
-struct page_metadata {
+struct page_metadata 
+{
 	page *next_free;
 
 	// EXTRA METADATA:
@@ -83,7 +85,8 @@ void page_allocator_buddy::dump() const
  * @param page_count The number of pages in the range.
  */
 // void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
-void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) {
+void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) 
+{
 	u64 base_pfn = range_start.pfn();
 	u64 remaining_pages = page_count;
 
@@ -198,7 +201,8 @@ void page_allocator_buddy::remove_free_block(int order, page &block_start)
  * @param block_start The starting page of the block to be split.
  */
 // void page_allocator_buddy::split_block(int order, page &block_start) { panic("TODO"); }
-void page_allocator_buddy::split_block(int order, page &block_start) {
+void page_allocator_buddy::split_block(int order, page &block_start) 
+{
 	// Verify that the order is valid
 	assert(order > 0 && order <= LastOrder); // Cannot split a block of order 0
 	
@@ -227,31 +231,45 @@ void page_allocator_buddy::split_block(int order, page &block_start) {
  * @param buddy Either buddy page in the free block.
  */
 // void page_allocator_buddy::merge_buddies(int order, page &buddy) { panic("TODO"); }
-void page_allocator_buddy::merge_buddies(int order, page &buddy) {
+void page_allocator_buddy::merge_buddies(int order, page &block) 
+{
 	// Verify that the order is valid
 	assert(order >= 0 && order <= LastOrder);
 	
-	// Verify that start of buddy is aligned
-	assert(block_aligned(order, buddy.pfn()));
+	// Verify that start of block is aligned
+	assert(block_aligned(order, block.pfn()));
 
 	// Buddy of a block = start of block XOR order
-	u64 buddy_pfn = buddy.pfn() ^ (1ULL << order);
-	page* partner = &page::get_from_pfn(buddy_pfn);
+	u64 buddy_pfn = block.pfn() ^ (1ULL << order);
+	page* buddy = &page::get_from_pfn(buddy_pfn);
 
-	// Remove the block and its buddy
-	remove_free_block(order, buddy);
-	remove_free_block(order, *partner);
-
-	// Obtain the new starting PFN
-	u64 partner_pfn = partner->pfn();
-	page* merged;
-	if (partner_pfn > buddy_pfn) {
-		merged = buddy;
-	} else {
-		merged = partner;
+	// Conditions to be able to merge:
+	// 1. Buddy is free
+	// 2. Buddy's current order is the same as the block we're dealing with
+	if (!metadata(buddy)->is_free || metadata(buddy)->order != order) {
+		return;
 	}
 
+	// Remove the block and its buddy
+	remove_free_block(order, block);
+	remove_free_block(order, *buddy);
+
+	// Obtain the new starting PFN
+	page* merged;
+	if (block->pfn() > buddy_pfn) {
+		merged = buddy;
+	} else {
+		merged = &block;
+	}
+
+	metadata(merged)->is_free = true;
+	metadata(merged)->order = order + 1;
+	metadata(merged)->next_free = nullptr;
+
 	insert_free_block(order + 1, merged);
+
+	// Attempt to merge recursively
+	merge_buddies(order + 1, *merged);
 }
 
 /**
@@ -263,11 +281,41 @@ void page_allocator_buddy::merge_buddies(int order, page &buddy) {
  * @return page* The starting page of the block that was allocated, or nullptr if the allocation cannot be satisfied.
  */
 // page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) { panic("TODO"); }
-page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) {
+page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) 
+{
 	assert(order >= 0 && order <= LastOrder);
 
+	// Find the first free block at order
 	int current_order = order;
-	
+	while (current_order <= LastOrder && free_list_[current_order] == nullptr) {
+		current_order++;
+	}
+
+	if (current_order > LastOrder) {
+		return nullptr; // No block large enough
+	}
+
+	// Remove the first block found
+	page* block = free_list_[current_order];
+	remove_free_block(current_order, *block);
+
+	// Split the block until we get the order needed
+	while (current_order > order) {
+		split_block(current_order, *block);
+
+		current_order--;
+		remove_free_block(current_order, *block); // Delete duplicate (left_pfn)
+	}
+
+	// Mark block as allocated
+	metadata(block)->is_free = false;
+	metadata(block)->order = order;
+	metadata(block)->next_free = nullptr;
+
+	// Check if we need to zero pages 
+	if ((flags & page_allocation_flags::zero) == page_allocation_flags::zero) {
+		memops::pzero(block->base_address_ptr(), (1ULL << order));
+	}
 }
 
 /**
@@ -278,6 +326,19 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
  * @param order The order of the block being freed.
  */
 // void page_allocator_buddy::free_pages(page &block_start, int order) { panic("TODO"); }
-void page_allocator_buddy::free_pages(page &block_start, int order) {
+void page_allocator_buddy::free_pages(page &block_start, int order) 
+{
+	assert(order >= 0 && order <= LastOrder);
+	assert(block_aligned(order, block_start.pfn()));
 
+	page* current = &block_start;
+	
+	// Mark block as free
+	metadata(block)->is_free = true;
+	metadata(block)->order = order;
+	metadata(block)->next_free = nullptr;
+
+	// Insert block and merge
+	insert_free_block(order, *block);
+	merge_buddies(order, *block);
 }
