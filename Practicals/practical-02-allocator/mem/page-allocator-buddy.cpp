@@ -116,8 +116,14 @@ void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count)
 		}
 
 		// Step 3. Insert the block and decrememt the remaining pages
-		insert_free_block(order, page::get_from_pfn(base_pfn));
-		inserted_block_size = 1ULL << order;
+		// insert_free_block(order, page::get_from_pfn(base_pfn));
+		page *block = &page::get_from_pfn(base_pfn);
+		metadata(block)->is_free = true;
+		metadata(block)->order = order;
+		metadata(block)->next_free = nullptr;
+		insert_free_block(order, *block);
+
+		u64 inserted_block_size = 1ULL << order;
 		base_pfn += inserted_block_size;
 		remaining_pages -= inserted_block_size;
 	}
@@ -142,6 +148,10 @@ void page_allocator_buddy::insert_free_block(int order, page &block_start)
 	// The comparison in the while loop is valid, because page descriptors (which we
 	// are dealing with) are contiguous in memory -- just like the pages they represent.
 	page *target = &block_start;
+
+	metadata(target)->is_free = true;
+	metadata(target)->order = order;
+
 	page **slot = &free_list_[order];
 	while (*slot && *slot < target) {
 		slot = &(metadata(*slot)->next_free);
@@ -184,6 +194,13 @@ void page_allocator_buddy::remove_free_block(int order, page &block_start)
 	// block really was in the free list for the order.
 	assert(*candidate_slot == target);
 
+	// if (*candidate_slot == nullptr) {
+	// 	// Optionally log for debugging
+	// 	dprintf("WARN: remove_free_block: target %lx not found in order %d list\n",
+	// 	        target->pfn(), order);
+	// 	return;
+	// }
+
 	// The candidate slot is the "next" pointer of the target's previous block.
 	// So, update that to point that to the target block's next pointer, thus
 	// removing the requested block from the linked-list.
@@ -213,13 +230,21 @@ void page_allocator_buddy::split_block(int order, page &block_start)
 	remove_free_block(order, block_start);
 
 	// Get the base PFN of the left and right halves
+	u64 half = 1ULL << (order - 1);
 	page* left_block = &block_start;
+	page* right_block = &page::get_from_pfn(block_start.pfn() + half);
 
-	u64 right_block_start = 1ULL << (order - 1);
-	page* right_block = &page::get_from_pfn(block_start.pfn() + right_block_start);
+	// Initialize metadata for halves
+    metadata(left_block)->is_free = true;
+    metadata(left_block)->order = order - 1;
+    metadata(left_block)->next_free = nullptr;
+
+    metadata(right_block)->is_free = true;
+    metadata(right_block)->order = order - 1;
+    metadata(right_block)->next_free = nullptr;
 
 	// Insert each half
-	insert_free_block(order - 1, *left_block);
+	// insert_free_block(order - 1, *left_block);
 	insert_free_block(order - 1, *right_block);
 }
 
@@ -234,42 +259,67 @@ void page_allocator_buddy::split_block(int order, page &block_start)
 void page_allocator_buddy::merge_buddies(int order, page &block) 
 {
 	// Verify that the order is valid
-	assert(order >= 0 && order <= LastOrder);
+	assert(order >= 0 && order < LastOrder); // Cannot merge if order is already LastOrder
 	
 	// Verify that start of block is aligned
 	assert(block_aligned(order, block.pfn()));
 
 	// Buddy of a block = start of block XOR order
-	u64 buddy_pfn = block.pfn() ^ (1ULL << order);
+	page* block_ptr = &block;
+	u64 buddy_pfn = block_ptr->pfn() ^ (1ULL << order);
 	page* buddy = &page::get_from_pfn(buddy_pfn);
 
 	// Conditions to be able to merge:
 	// 1. Buddy is free
 	// 2. Buddy's current order is the same as the block we're dealing with
-	if (!metadata(buddy)->is_free || metadata(buddy)->order != order) {
-		return;
-	}
+	// 3. Buddy is actually present in the free list
+    if (!metadata(buddy)->is_free) return;
+    if (metadata(buddy)->order != (u64) order) return;
+
+	bool valid_buddy = false;
+	page* curr = free_list_[order];
+    while (curr) {
+        if (curr == buddy) {
+			valid_buddy = true;
+			break;
+		}
+        curr = metadata(curr)->next_free;
+    }
+    if (!valid_buddy) return;
+
+	bool valid_block = false;
+	curr = free_list_[order];
+    while (curr) {
+        if (curr == block_ptr) {
+			valid_block = true;
+			break;
+		}
+        curr = metadata(curr)->next_free;
+    }
+    if (!valid_block) return; // Also check if the block is present in the free list
 
 	// Remove the block and its buddy
-	remove_free_block(order, block);
+	remove_free_block(order, *block_ptr);
 	remove_free_block(order, *buddy);
 
 	// Obtain the new starting PFN
 	page* merged;
-	if (block->pfn() > buddy_pfn) {
+	if (block.pfn() > buddy_pfn) {
 		merged = buddy;
 	} else {
-		merged = &block;
+		merged = block_ptr;
 	}
 
 	metadata(merged)->is_free = true;
 	metadata(merged)->order = order + 1;
 	metadata(merged)->next_free = nullptr;
 
-	insert_free_block(order + 1, merged);
+	insert_free_block(order + 1, *merged);
 
 	// Attempt to merge recursively
-	merge_buddies(order + 1, *merged);
+	if (order + 1 <= LastOrder) {
+		merge_buddies(order + 1, *merged);
+	}
 }
 
 /**
@@ -297,14 +347,18 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 
 	// Remove the first block found
 	page* block = free_list_[current_order];
+	assert(block_aligned(current_order, block->pfn()));
 	remove_free_block(current_order, *block);
 
 	// Split the block until we get the order needed
 	while (current_order > order) {
-		split_block(current_order, *block);
-
+		split_block(current_order, *block);  // Removes current_order, inserts halves
 		current_order--;
-		remove_free_block(current_order, *block); // Delete duplicate (left_pfn)
+
+        // Left half will have same PFN as original block
+        block = &page::get_from_pfn(block->pfn());
+        metadata(block)->is_free = false;
+        metadata(block)->next_free = nullptr;
 	}
 
 	// Mark block as allocated
@@ -316,6 +370,8 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 	if ((flags & page_allocation_flags::zero) == page_allocation_flags::zero) {
 		memops::pzero(block->base_address_ptr(), (1ULL << order));
 	}
+
+	return block;
 }
 
 /**
@@ -326,19 +382,61 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
  * @param order The order of the block being freed.
  */
 // void page_allocator_buddy::free_pages(page &block_start, int order) { panic("TODO"); }
-void page_allocator_buddy::free_pages(page &block_start, int order) 
-{
-	assert(order >= 0 && order <= LastOrder);
-	assert(block_aligned(order, block_start.pfn()));
+void page_allocator_buddy::free_pages(page &block_start, int order) {
+    assert(order >= 0 && order <= LastOrder);
+    assert(block_aligned(order, block_start.pfn()));
 
-	page* current = &block_start;
-	
-	// Mark block as free
-	metadata(block)->is_free = true;
-	metadata(block)->order = order;
-	metadata(block)->next_free = nullptr;
+    page* current = &block_start;
+    int current_order = order;
 
-	// Insert block and merge
-	insert_free_block(order, *block);
-	merge_buddies(order, *block);
+    // Mark as free
+    metadata(current)->is_free = true;
+    metadata(current)->order = current_order;
+    metadata(current)->next_free = nullptr;
+
+    while (current_order < LastOrder) {
+        u64 buddy_pfn = current->pfn() ^ (1ULL << current_order);
+        page* buddy = &page::get_from_pfn(buddy_pfn);
+
+        if (!metadata(buddy)->is_free) break;
+        if (metadata(buddy)->order != (u64) current_order) break;
+
+		bool valid_block = false;
+		page* curr = free_list_[current_order];
+		while (curr) {
+			if (curr == buddy) {
+				valid_block = true;
+				break;
+			}
+			curr = metadata(curr)->next_free;
+		}
+        if (!valid_block) break;
+
+        // Remove both from current order’s free list
+        remove_free_block(current_order, *buddy);
+        // remove_free_block(current_order, *current);
+
+        // Pick the lower address as merged base
+		page *merged;
+		if (current->pfn() > buddy->pfn()) {
+			merged = buddy;
+		} else {
+			merged = current;
+		}
+
+		current = merged;
+        current_order++;
+
+        metadata(current)->is_free = true;
+        metadata(current)->order = current_order;
+        metadata(current)->next_free = nullptr;
+    }
+
+    // Insert the final merged block once
+    insert_free_block(current_order, *current);
+
+	// Recursively attempt to merge higher order
+    if (current_order < LastOrder) {
+        merge_buddies(current_order, *current);
+    }
 }
