@@ -226,8 +226,8 @@ void page_allocator_buddy::split_block(int order, page &block_start)
 	// Verify that block_start is aligned
 	assert(block_aligned(order, block_start.pfn()));
 
-	// Remove the block to be split for the time being
-	remove_free_block(order, block_start);
+	// Remove the block to be split
+	// remove_free_block(order, block_start);
 
 	// Get the base PFN of the left and right halves
 	u64 half = 1ULL << (order - 1);
@@ -317,7 +317,7 @@ void page_allocator_buddy::merge_buddies(int order, page &block)
 	insert_free_block(order + 1, *merged);
 
 	// Attempt to merge recursively
-	if (order + 1 <= LastOrder) {
+	if (order + 1 < LastOrder) {
 		merge_buddies(order + 1, *merged);
 	}
 }
@@ -434,9 +434,4 @@ void page_allocator_buddy::free_pages(page &block_start, int order) {
 
     // Insert the final merged block once
     insert_free_block(current_order, *current);
-
-	// Recursively attempt to merge higher order
-    if (current_order < LastOrder) {
-        merge_buddies(current_order, *current);
-    }
 }
