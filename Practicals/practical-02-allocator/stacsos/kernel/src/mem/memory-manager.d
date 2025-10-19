@@ -1,0 +1,27 @@
+/cs/home/ek242/Documents/stacsos/kernel/src/mem/memory-manager.o: \
+ /cs/home/ek242/Documents/stacsos/kernel/src/mem/memory-manager.cpp \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/kernel-global.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/global.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos-config.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/config.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/memops.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/debug.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/memory-manager.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/address-space.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/address-space-region.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-table.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/arch/x86/x86-page-table.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/arch/x86/page-table-structures.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/list.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/object-allocator.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/lock.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/helpers.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/large-object-allocator.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-allocator.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-alloc-ref.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-table-allocator.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/slab-cache.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/bitset.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-allocator-buddy.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/mem/page-allocator-linear.h
