@@ -343,7 +343,7 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
         page** slot = &free_list_[current_order];
 
         while (*slot && *slot != buddy) {
-			page* next = metadata(*slot)->next_free;
+			slot = &(metadata(*slot)->next_free);
 		}
 
 		if (!*slot) {
