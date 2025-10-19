@@ -40,7 +40,13 @@ struct page_metadata
  * @param page The page on which to retrieve the metadata struct.
  * @return page_metadata* The metadata structure.
  */
-static inline page_metadata *metadata(page *page) { return (page_metadata *)page->base_address_ptr(); }
+static inline page_metadata *metadata(page *page) 
+{ 
+	// Convert the physical address from base_address() into a
+	// kernel virtual address using the pa_to_kva helper from page.h
+	return (page_metadata *) pa_to_kva (page->base_address()); 
+}
+
 
 /**
  * @brief Dumps out (via the debugging routines) the current state of the buddy page allocator's free lists
@@ -89,12 +95,6 @@ void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count)
 	u64 base_pfn = range_start.pfn();
 	u64 remaining_pages = page_count;
 
-	// Cache of the last insertion point for each order for efficiency
-	// page** last_slot[LastOrder + 1];
-	// for (int i = 0; i <= LastOrder; i++) {
-	// 	last_slot[i] = &free_list_[i];
-	// }
-
 	while (remaining_pages > 0) {
 		int order = 0;
 
@@ -123,23 +123,6 @@ void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count)
 		page* block = &page::get_from_pfn(base_pfn);
 		metadata(block)->is_free = true;
 		metadata(block)->order = order;
-		// metadata(block)->next_free = nullptr;
-
-		// page* target = block;
-		// page** slot = last_slot[order]; // Start from last known position
-
-		// // Search starting from last known position
-		// while (*slot && *slot < target) {
-		// 	slot = &(metadata(*slot)->next_free);
-		// }
-
-		// assert(*slot != target);
-
-		// metadata(target)->next_free = *slot;
-		// *slot = target;
-
-		// // Save latest position
-		// last_slot[order] = &(metadata(target)->next_free);
 
 		insert_free_block(order, *block);
 
@@ -233,11 +216,8 @@ void page_allocator_buddy::remove_free_block(int order, page &block_start)
 // void page_allocator_buddy::split_block(int order, page &block_start) { panic("TODO"); }
 void page_allocator_buddy::split_block(int order, page &block_start) 
 {
-	// Verify that the order is valid
 	assert(order > 0 && order <= LastOrder); // Cannot split a block of order 0
-	
-	// Verify that block_start is aligned
-	assert(block_aligned(order, block_start.pfn()));
+	assert(block_aligned(order, block_start.pfn())); // Check that block_start is aligned
 
 	// Get the base PFN of the left and right halves
 	u64 half = 1ULL << (order - 1);
@@ -248,8 +228,7 @@ void page_allocator_buddy::split_block(int order, page &block_start)
     metadata(right_block)->order = order - 1;
     metadata(right_block)->next_free = nullptr;
 
-	// Insert the right half
-	// The left half will be used by allocate_pages
+	// Insert the right half -> leave left half to allocate_pages
 	insert_free_block(order - 1, *right_block);
 }
 
@@ -293,7 +272,7 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 
 	// Split the block until we get the order needed
 	while (current_order > order) {
-		split_block(current_order, *block);  // Remove current_order, insert right half
+		split_block(current_order, *block);  // Remove from current_order, insert right half
 		current_order--;
 	}
 
@@ -304,7 +283,7 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 
 	// Check if we need to zero pages 
 	if ((flags & page_allocation_flags::zero) == page_allocation_flags::zero) {
-		memops::pzero(block->base_address_ptr(), (1ULL << order) << PAGE_BITS);
+		memops::pzero(pa_to_kva(block->base_address()), (1ULL << order) << PAGE_BITS);
 	}
 
 	return block;
@@ -334,15 +313,16 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
         // Find the buddy in the free list for current_order
         page** slot = &free_list_[current_order];
 
+		// This loop is now safe because metadata() returns a KVA
         while (*slot && *slot < buddy) {
 			slot = &(metadata(*slot)->next_free);
 		}
 
 		if (!*slot || *slot != buddy) {
-			break;
+			break; // Buddy is not free, stop merging
         }
 
-		// Buddy found
+		// Buddy found and is free -> remove it from the list
 		*slot = metadata(*slot)->next_free;
 
         // Merged block's PFN is min(current, buddy)
@@ -356,7 +336,6 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
     // Insert merged block into the correct free list
     metadata(current)->is_free = true;
     metadata(current)->order = current_order;
-    // metadata(current)->next_free = nullptr;
 
     insert_free_block(current_order, *current);
 }
