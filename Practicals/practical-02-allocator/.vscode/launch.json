@@ -3,11 +3,22 @@
   "configurations": [
     {
       "name": "C/C++ Runner: Debug Session",
-      "type": "lldb",
+      "type": "cppdbg",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/eugenekong/Desktop/UniShit/CS3104-Operating_Systems/Practicals/practical-02-allocator/mem",
-      "program": "/Users/eugenekong/Desktop/UniShit/CS3104-Operating_Systems/Practicals/practical-02-allocator/mem/build/Debug/outDebug"
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator",
+      "program": "c:/Users/violining/Desktop/CS3104-Operating_Systems/Practicals/practical-02-allocator/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     }
   ]
 }
