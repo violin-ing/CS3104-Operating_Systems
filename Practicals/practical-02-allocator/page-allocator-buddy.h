@@ -45,5 +45,8 @@ private:
 
 	// EDIT: ADDED HELPER FUNCTION
 	page* find_free_block(int order, page &block_start);
+
+	// EDIT: ADDED LOCK FOR THREAD SAFETY
+	mutable stacsos::kernel::spinlock_irq allocator_lock_;
 };
 } // namespace stacsos::kernel::mem

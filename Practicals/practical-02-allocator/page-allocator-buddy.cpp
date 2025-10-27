@@ -10,6 +10,9 @@
 #include <stacsos/kernel/mem/page.h>
 #include <stacsos/memops.h>
 
+// ADDITIONAL HEADER FILE FOR LOCK (THREAD-SAFETY)
+#include <stacsos/kernel/lock.h>
+
 using namespace stacsos;
 using namespace stacsos::kernel;
 using namespace stacsos::kernel::mem;
@@ -34,6 +37,9 @@ static inline page_metadata *metadata(page *page) { return (page_metadata *)page
  */
 void page_allocator_buddy::dump() const
 {
+	// Lock resource for thread-safety
+	stacsos::kernel::unique_irq_lock lock(allocator_lock_);
+
 	// Print out a header, so we can quickly identify this output in the debug stream.
 	dprintf("*** buddy page allocator - free list ***\n");
 
@@ -94,12 +100,18 @@ page* page_allocator_buddy::find_free_block(int order, page &block_start)
 // void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count) { panic("TODO"); }
 void page_allocator_buddy::insert_free_pages(page &range_start, u64 page_count)
 {
+	// Lock resource for thread-safety
+	stacsos::kernel::unique_irq_lock lock(allocator_lock_);
+
 	u64 current_pfn = range_start.pfn();
 	u64 remaining_pages = page_count;
 
+	// Iterate while there are still pages left to be inserted
 	while (remaining_pages > 0) {
 		// Find the largest order that is <= remaining pages and for which the current block is aligned
 		int order = 0;
+
+		// Find the largest possible block that is small enough to fit the remaining pages AND has correct alignment
 		while ((order + 1) <= LastOrder) {
 			if (pages_per_block(order + 1) > remaining_pages) {
 				break; // Order is too big for the number of remaining pages
@@ -213,6 +225,7 @@ void page_allocator_buddy::split_block(int order, page &block_start)
 	page &block1 = page::get_from_pfn(block1_pfn);
 	page &block2 = page::get_from_pfn(block2_pfn);
 
+	// Insert the smaller halves into the next order
 	insert_free_block(order - 1, block1);
 	insert_free_block(order - 1, block2);
 }
@@ -235,16 +248,16 @@ void page_allocator_buddy::merge_buddies(int order, page &block)
 
 	// Find buddy PFN
 	u64 block_pfn = block.pfn();
-	u64 buddy_pfn = block_pfn ^ pages_per_block(order);
+	u64 buddy_pfn = block_pfn ^ pages_per_block(order); // Note: pages_per_block(order) = 1 << order
 	page &buddy = page::get_from_pfn(buddy_pfn);
 
-	// Check if buddy is free by iterating through free_list_
+	// Check if buddy is actually free by iterating through free_list_
 	page* free_buddy = find_free_block(order, buddy);
 
-	if (free_buddy == nullptr) {
+	if (free_buddy == nullptr) { // Buddy is not free
 		// BASE CASE 2: Buddy is not free, so just insert the block into free_list_
 		insert_free_block(order, block);
-	} else {
+	} else { // Buddy is free
 		// Remove buddy from free_list_
 		remove_free_block(order, *free_buddy);
 
@@ -267,11 +280,14 @@ void page_allocator_buddy::merge_buddies(int order, page &block)
 // page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags) { panic("TODO"); }
 page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flags)
 {
+	// Lock resource for thread-safety
+	stacsos::kernel::unique_irq_lock lock(allocator_lock_);
+
 	if (order < 0 || order > LastOrder) {
 		return nullptr; // Invalid order
 	}
 
-	// Find smallest order that has a free block
+	// Find smallest order >= order that has a free block
 	int current_order = order;
 	while (current_order <= LastOrder) {
 		if (free_list_[current_order] != nullptr) {
@@ -292,12 +308,12 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 
 	// Split the block if needed
 	while (current_order > order) {
-		split_block(current_order, *block);
+		split_block(current_order, *block); // split_block will handle inserting the split halves
 		current_order--;
 	}
 
 	// Remove the final block
-	remove_free_block(order, *block);
+	remove_free_block(order, *block); // Remove appropriately-sized block
 
 	// Zero memory if needed
 	if ((flags & page_allocation_flags::zero) == page_allocation_flags::zero) {
@@ -317,8 +333,11 @@ page *page_allocator_buddy::allocate_pages(int order, page_allocation_flags flag
 // void page_allocator_buddy::free_pages(page &block_start, int order) { panic("TODO"); }
 void page_allocator_buddy::free_pages(page &block_start, int order)
 {
+	// Lock resource for thread-safety
+	stacsos::kernel::unique_irq_lock lock(allocator_lock_);
+
 	assert(order >= 0 && order <= LastOrder);
 	
-	// Start merge_buddies
+	// Start merge_buddies -> handles all logic
 	merge_buddies(order, block_start);
 }
