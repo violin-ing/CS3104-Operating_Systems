@@ -9,6 +9,9 @@
 
 #include <stacsos/kernel/mem/page-allocator.h>
 
+// ADDITIONAL HEADER FILE FOR LOCK (THREAD-SAFETY)
+#include <stacsos/kernel/lock.h>
+
 namespace stacsos::kernel::mem {
 class page_allocator_buddy : public page_allocator {
 public:
