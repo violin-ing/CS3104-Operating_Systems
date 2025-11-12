@@ -1,0 +1,44 @@
+Write a program that opens the file /usr/share/dict/words
+(or whatever the equivalent path is on your system),
+and displays the first n lines, where n is specified as a
+command-line parameter.
+
+- Example: $ ./words 5
+    1080
+    10-point
+    10th
+    11-point
+    12-point
+    
+- Hint: use atoi for parsing the command-line parameter.
+- Bonus: write your own implementation of atoi.
+- Note: try to implement robust error checking.
+
+
+=== TASKS ===
+1. Write the program in C, using the the fopen()/fgets()/fclose() family of functions.
+2. Write the program in C++, using iostream.
+3. Write the program in C, using the open()/read()/close() family of functions.
+4. Write the program in C, using the open()/mmap()/close()/munmap() family of functions.
+5. Write the program in C, using the syscall() function. You will need to explore how
+syscalls are implemented.
+6. Write the program in x86 assembly language, using the syscall instruction to 
+communicate with the kernel. You will need to find out the raw system call numbers:
+https://filippo.io/linux-syscall-table/
+
+For the above, you can use the likes of printf/putchar e.g. for display – what’s important is
+reading the input file using the specified methods.
+
+=== DISCUSSION === 
+Even if you don’t manage to complete the implementations, investigate each
+strategy for reading from files, and learn about what makes each approach different 
+from the other.
+
+- Why might you choose one implementation over another?
+    > 
+
+- What is the level of abstraction?
+    > 
+
+- What features are provided by higher abstractions?
+    > 
