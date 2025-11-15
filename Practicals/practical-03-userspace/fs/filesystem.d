@@ -1,0 +1,19 @@
+/cs/home/ek242/Documents/stacsos/kernel/src/fs/filesystem.o: \
+ /cs/home/ek242/Documents/stacsos/kernel/src/fs/filesystem.cpp \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/kernel-global.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/global.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos-config.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/dev/storage/block-device.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/dev/device.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/dev/bus.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/dev/device-class.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/fs/file.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/memory.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/helpers.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/fs/filesystem.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/fs/fs-node.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/string.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/list.h \
+ /cs/home/ek242/Documents/stacsos/lib/inc/stacsos/memops.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/fs/tar-filesystem.h \
+ /cs/home/ek242/Documents/stacsos/kernel/inc/stacsos/kernel/fs/fat.h
